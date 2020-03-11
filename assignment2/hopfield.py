@@ -13,21 +13,23 @@ def activation_function(f, net):
     else:
         return -1
 
-def plotting(vector, shape):
+def plotting(actual, predict, shape):
     cmap = colors.ListedColormap(['black', 'white'])
     bounds = [-1.5, 0, 1.5]
     norm = colors.BoundaryNorm(bounds, cmap.N)
 
-    _ , ax = plt.subplots()
-    ax.imshow(np.array(vector).reshape(shape), cmap=cmap, norm=norm)
+    _ , ax = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True)
+    ax[0].imshow(np.array(predict).reshape(shape), cmap=cmap, norm=norm)
+    ax[1].imshow(np.array(actual).reshape(shape), cmap=cmap, norm=norm)
 
-    ax.grid(linewidth=0.2)
-    ax.set_xticks(np.arange(-0.5, 9, 1))
-    ax.set_yticks(np.arange(-0.5, 10, 1))
+    for i in range(2):
+        ax[i].grid(linewidth=0.2)
+        ax[i].set_xticks(np.arange(-0.5, 9, 1))
+        ax[i].set_yticks(np.arange(-0.5, 10, 1))
+        ax[i].set(xlabel='Width', ylabel='Height')
+    ax[0].set_title("Corrupted Letter")
+    ax[1].set_title("Converged Letter")
 
-    plt.xlabel("Width")
-    plt.ylabel("Height")
-    plt.title("Alphabet")
     plt.show()
 
     return
@@ -93,10 +95,9 @@ class Hopfield():
         return y
 
 if __name__ == '__main__':
-    # fname = input('Enter the name of the file: ')
-    fname = 'training_data.csv'
+    fname = input('Enter distorted file-name: ')
 
-    train = pd.read_csv(fname)
+    train = pd.read_csv('training_data.csv')
 
     y = train['label']
     train.drop(['label'], axis=1, inplace=True)
@@ -107,9 +108,8 @@ if __name__ == '__main__':
     network.stabilize(x)
     print(network)
 
-    test = pd.read_csv('distorted.csv')
+    test = pd.read_csv(fname)
     test.drop(['label'], axis=1, inplace=True)
-    output = network.predict(test.loc[0, :].values)
-    plotting(test.loc[0, :].values, (10, 10))
-    plotting(output, (10, 10))
-    print(output)
+    output = network.predict(test.values[0])
+    plotting(output, test.values[0], (10, 10))
+    print("Converged Letter:\n", output.reshape(10, 10))
