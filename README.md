@@ -4,6 +4,8 @@ My implementation of different neural network models from scratch in Python
 
 ## NN Models
 
+* Single Layer Perceptron
+
 * HopField Network
 
 ## Activation Functions
@@ -30,7 +32,7 @@ It's a mathematical function which gives a normalized exponential vector of n-in
 
 ## Assignments
 
-> Check the readme's in the dirctoeies for more description
+> Check the readme's in the directories for more description
 
 * assignment1: Implementing Single layer Perception
 
