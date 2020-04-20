@@ -28,6 +28,10 @@ It's a mathematical function which gives a normalized exponential vector of n-in
 
 ![softmax](./Activation-functions/softmax.jpg)
 
+* Swish
+It's a function that combines the simplicity of ReLU and sigmoid shown to be marginally better than either activations
+![swish](./Activation-functions/swish.jpg)
+
 ## Assignments
 
 > Check the readme's in the dirctoeies for more description
