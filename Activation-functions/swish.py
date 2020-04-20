@@ -11,8 +11,8 @@ def swish(a: float) -> float:
     """
 
         Swish function, which has a ramp shape, it defines the positive part of the argument.
-
-
+        Developed by Google Brain, it has been shown to work better than ReLU, while preserving
+        the benefits of ReLU
 
         Arguments
 
