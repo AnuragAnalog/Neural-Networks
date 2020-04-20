@@ -30,7 +30,7 @@ It's a mathematical function which gives a normalized exponential vector of n-in
 
 * Swish
 It's a function that combines the simplicity of ReLU and sigmoid shown to be marginally better than either activations
-![swish](./Activation-functions/swish.jpg)
+![swish](./Activation-functions/swish_graph.jpg)
 
 ## Assignments
 
