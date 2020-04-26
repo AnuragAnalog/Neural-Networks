@@ -9,6 +9,9 @@ def step(x: [int, float], T: [int, float]=0) -> int:
         return 1
 
 def sigmoid(x: [int, float]) -> float:
+    if x.dtype == 'O':
+        x = x.astype("float64")
+
     return 1 / (1 + np.exp(-x))
 
 def tanh(x: [int, float]) -> float:

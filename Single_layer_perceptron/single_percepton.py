@@ -11,19 +11,21 @@ from encoding import OneHotEncoder, categorize
 from splitting import train_test_split
 from activation_function import sigmoid
 
+np.random.seed(4)
+
 class Perceptron():
     """
-        An implementation of a single layer perceptron, which takes two features(Mass, Speed) as input and predicts the class(Bomber or Fighter) of the plane
+        An implementation of a single layer perceptron.
     """
 
-    def __init__(self, in_layer, out_layer, learning_rate=0.01):
-        self.input_layer = in_layer + 1
-        self.output_layer = out_layer
+    def __init__(self, in_layer, out_layer, learning_rate=0.01, variant='random'):
+        self.model_ran = False
+        self.input = in_layer
+        self.output = out_layer
         self.lr = learning_rate
-        self.epochs = 100
-        self.weights = list()
-        self.del_weights = list()
-        self.training_loss = list()
+        self.epochs = 10
+        self.zero_grad()
+        self.__initialization(self.input, self.output, variant=variant)
 
     def __str__(self):
         about_hyperparameters = "Epochs: "+str(self.epochs)+" Learning Rate: "+str(self.lr)
@@ -33,53 +35,95 @@ class Perceptron():
         # Initializing the weight matrix with random values.
 
         if variant == 'he':
-            w = np.random.randn(row, col) * np.sqrt(2 / row)
+            self.W = np.random.randn(row, col) * np.sqrt(2 / row)
         elif variant == 'xavier':
-            w = np.random.randn(row, col) * np.sqrt(1 / row)
+            self.W = np.random.randn(row, col) * np.sqrt(1 / row)
         elif variant == 'random':
-            w = np.random.randn(row, col)
+            self.W = np.random.randn(row, col)
         elif variant == 'zero':
-            w = np.zeros((row, col))
+            self.W = np.zeros((row, col))
 
-        if bias is False:
-            w[-1, :] = [0] * col
+        if bias:
+            self.b = np.random.randn(self.output).reshape((self.output, -1))
+        else:
+            self.b = np.zeros(self.output).reshape((self.output, -1))
 
-        return w
+        return
 
-    def __add_bais(self, vector):
-        # Add a bais Transforms a vector into the required shape
+    def __reshape_input(self, vector):
+        # Transforms a vector into the required shape
 
-        vector_in = list(vector) + [-1.0]
+        if isinstance(vector, list):
+            vector = np.array(vector)
+
+        vector_in = vector.reshape((self.input, -1))
+        return vector_in
+
+    def __reshape_output(self, vector):
+        # Transforms a vector into the required shape
+
+        if isinstance(vector, list):
+            vector = np.array(vector)
+
+        vector_in = vector.reshape((self.output, -1))
         return vector_in
 
     def forward(self, x):
-        output = sigmoid(np.dot(self.weights.T, x))
+        """
+        Forward pass in the Neural network
+
+        Parameters
+        ----------
+        x : ndarray, list
+            An input training example
+
+        Return
+        ------
+        output : ndarray
+            An output vector
+        """
+
+        output = sigmoid(np.dot(self.W.T, x) + self.b)
 
         return output
 
     def backward(self, in_value, output, actual):
-        self.del_weights = np.zeros(self.weights.shape)
+        """
+        One backward propagation
 
-        for i in range(self.input_layer):
-            for j in range(self.output_layer):
-                if self.learning == 'gradient':
-                    self.del_weights[i][j] += self.lr * (actual[j] - output[j]) * output[j] * (1 - output[j]) * in_value[i]
-                elif self.learning == 'perceptron':
-                    self.del_weights[i][j] += self.lr * (actual[j] - output[j]) * in_value[i]
-                else:
-                    print("Not a valid learning algorithm.")
-                    sys.exit()
+        Parameters
+        ----------
+        in_value : ndarray, list
+            An input training example
+        output : ndarray
+            An output vector obtained from forward pass
+        actual : ndarray, list
+            The Actual label for the training example
+
+        Return
+        ------
+        None : NoneType
+        """
+
+        self.dW += self.lr * np.dot(((actual - output) * output * (1 - output)), in_value.reshape((-1, self.input))).T
+        self.db += self.lr * (actual - output) * output * (1 - output)
+
+        if self.dW.dtype == 'O':
+            self.dW = self.dW.astype("float64")
 
         return
 
     def update_weights(self):
-        for i in range(self.input_layer):
-            for j in range(self.output_layer):
-                self.weights[i][j] += self.del_weights[i][j]
+        """
+        Update the weights
+        """
+
+        self.W += self.dW
+        self.b += self.db
 
         return
 
-    def model(self, x, y, epochs=100, learning='gradient'):
+    def model(self, x, y, epochs=100, debug=False, debug_verbose=False):
         """
         Find the weights
 
@@ -100,25 +144,66 @@ class Perceptron():
         """
 
         self.epochs = epochs
-        self.learning = learning
+        self.model_ran = True
         self.data_length = len(x)
-        self.weights = self.__initialization(self.input_layer, self.output_layer, variant='random')
-        print(self.weights, self.weights.shape)
+        self.training_loss = list()
 
         for e in range(self.epochs):
             predict = list()
+            self.zero_grad()
             for i in range(self.data_length):
-                x_tmp = self.__add_bais(x[i])
+                x_tmp = self.__reshape_input(x[i])
                 output = self.forward(x_tmp)
-                self.backward(x_tmp, output, y[i])
+                y_tmp = self.__reshape_output(y[i])
+                self.backward(x_tmp, output, y_tmp)
 
                 predict.append(output.tolist())
             self.update_weights()
 
+            if debug:
+                self.debug(more_verbose=debug_verbose)
+
             self.training_loss.append(MSE(y, predict))
-            print(f"Epochs: {e+1}/{epochs}.. Training Loss: {self.training_loss[e]: 3f}..\nWeights: {self.weights.tolist()}\n")
+            print(f"Epochs: {e+1}/{epochs} Training Loss: {self.training_loss[e]}..")
 
         return
+
+    def zero_grad(self):
+        self.dW = 0
+        self.db = 0
+
+        return
+
+    def debug(self, more_verbose=False):
+        print("Weights are: {}".format(self.W))
+        print("Biases are: {}".format(self.b))
+
+        if more_verbose:
+            print("dW is: {}".format(self.dW))
+            print("db is: {}".format(self.db))
+
+    def get_weights(self):
+        return self.W
+
+    def get_biases(self):
+        return self.b
+
+    def summary(self):
+        if self.model_ran is False:
+            print("Run the model before viewing summary statistics")
+            return
+        
+        print("=============================")
+        print("\tSummary\t")
+        print("=============================")
+        print("Number of features are {}\t".format(self.input))
+        print("Number of targets are {}\t".format(self.output))
+        print("Model ran for {} epochs\t".format(self.epochs))
+        print("Trained on {} examples\t".format(self.data_length))
+        print("With a learning rate of\t{}".format(self.lr))
+        print("Dimensions of weights {}\t".format(self.W.shape))
+        print("Dimensions of biases {}\t".format(self.b.shape))
+        print("=============================")
 
     def plotting(self):
         """
@@ -159,7 +244,7 @@ class Perceptron():
             The output vector
         """
 
-        y_tmp = self.__add_bais(y_new)
+        y_tmp = self.__reshape_input(y_new)
         predicted = self.forward(y_tmp)
         print(predicted)
 
@@ -170,24 +255,24 @@ if __name__ == '__main__':
     fname = 'dataset.csv'
     data = pd.read_csv(fname)
 
-    ## Preprocessing of data
-    train, test = train_test_split(data, train_ratio=0.8)
-
-    # cat = OneHotEncoder()
-    cat = categorize()
-    cat.fit(train[:, 2])
-    train_y = cat.transform(train[:, 2])
-    train_x = train[:, [0, 1]]
+    cat = OneHotEncoder()
+    # cat = categorize()
+    cat.fit(data['Class'].values)
+    y = cat.transform(data['Class'].values)
+    x = data[['Mass', 'Speed']].values
 
     ## Run the model
-    epochs = int(input("Enter the number of Epochs: "))
-    learning_rate = float(input("Enter the Learning rate: "))
+    epochs = 10000
+    learning_rate = 0.1
+    # epochs = int(input("Enter the number of Epochs: "))
+    # learning_rate = float(input("Enter the Learning rate: "))
 
     net = Perceptron(2, 2, learning_rate=learning_rate)
     print(net)
-    net.model(train_x, train_y, epochs=epochs)
+    net.model(x, y, epochs=epochs)
     print(net)
+    net.summary()
     net.plotting()
 
     ## Prediction
-    net.predict([0.50, 0.45])
+    net.predict(x[1])
